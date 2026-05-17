@@ -1,8 +1,6 @@
 import { ArrowButton } from 'src/ui/arrow-button';
 import { Button } from 'src/ui/button';
-
-import styles from './ArticleParamsForm.module.scss';
-import { useState, useContext } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { Select } from 'src/ui/select';
 import {
@@ -11,78 +9,82 @@ import {
 	fontColors,
 	fontFamilyOptions,
 	fontSizeOptions,
+	ArticleStateType,
+	defaultArticleState,
 } from 'src/constants/articleProps';
 import { Text } from 'src/ui/text';
 import { RadioGroup } from 'src/ui/radio-group';
 import { Separator } from 'src/ui/separator';
-import { ArticleStylesContext, defaultStyles } from 'src/context/articleStyles';
 
-export const ArticleParamsForm = () => {
-	const [isOpen, setIsOpen] = useState<boolean>(false);
-	const { setArticleStyles } = useContext(ArticleStylesContext);
+import styles from './ArticleParamsForm.module.scss';
 
-	type Values = {
-		fontFamily: (typeof fontFamilyOptions)[number];
-		fontSize: (typeof fontSizeOptions)[number];
-		fontColors: (typeof fontColors)[number];
-		backgroundColors: (typeof backgroundColors)[number];
-		contentWidth: (typeof contentWidthArr)[number];
-	};
+type ArticleParamsFormProps = {
+	setArticleState: (param: ArticleStateType) => void;
+};
 
-	const defaultFormState = {
-		fontFamily: fontFamilyOptions[0],
-		fontSize: fontSizeOptions[0],
-		fontColors: fontColors[0],
-		backgroundColors: backgroundColors[0],
-		contentWidth: contentWidthArr[0],
-	};
+export const ArticleParamsForm = ({
+	setArticleState,
+}: ArticleParamsFormProps) => {
+	const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+	const [formValues, setFormValues] =
+		useState<ArticleStateType>(defaultArticleState);
+	const rootRef = useRef<HTMLDivElement>(null);
 
-	const [values, setValues] = useState<Values>(defaultFormState);
+	useEffect(() => {
+		if (!isFormOpen) return;
+
+		const handleClickOutside = (e: MouseEvent) => {
+			if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+				setIsFormOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isFormOpen]);
+
+	useEffect(() => {
+		if (!isFormOpen) return;
+		const handleEscClick = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				setIsFormOpen(false);
+			}
+		};
+
+		document.addEventListener('keydown', handleEscClick);
+		return () => {
+			document.removeEventListener('keydown', handleEscClick);
+		};
+	}, [isFormOpen]);
 
 	const handleArrowButtonClick = () => {
-		setIsOpen(!isOpen);
+		setIsFormOpen(!isFormOpen);
 	};
 
-	const handleChange = <T extends keyof Values>(
-		field: T,
-		option: Values[T]
-	) => {
-		setValues((prev) => ({ ...prev, [field]: option } as Values));
-	};
+	const onChange =
+		<K extends keyof ArticleStateType>(field: K) =>
+		(value: ArticleStateType[K]) => {
+			setFormValues((prev) => ({ ...prev, [field]: value }));
+		};
 
 	const handleReset = () => {
-		setValues(defaultFormState);
-		setArticleStyles(defaultStyles);
+		setFormValues(defaultArticleState);
+		setArticleState(defaultArticleState);
 	};
 
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		setArticleStyles({
-			'--font-family': values.fontFamily.value,
-			'--font-size': values.fontSize.value,
-			'--font-color': values.fontColors.value,
-			'--container-width': values.contentWidth.value,
-			'--bg-color': values.backgroundColors.value,
-		});
-	};
-
-	const handleOverlayClick = (e: React.MouseEvent<HTMLElement>) => {
-		if (e.target === e.currentTarget) {
-			setIsOpen(false);
-		}
+		setArticleState(formValues);
 	};
 
 	return (
-		<>
-			<div
-				className={clsx('', {
-					[styles.overlay]: isOpen,
-				})}
-				onClick={handleOverlayClick}></div>
-			<ArrowButton isOpen={isOpen} onClick={handleArrowButtonClick} />
+		<div ref={rootRef}>
+			<ArrowButton isOpen={isFormOpen} onClick={handleArrowButtonClick} />
 			<aside
 				className={clsx(styles.container, {
-					[styles.container_open]: isOpen,
+					[styles.container_open]: isFormOpen,
 				})}>
 				<form
 					className={styles.form}
@@ -92,35 +94,35 @@ export const ArticleParamsForm = () => {
 						Задайте параметры
 					</Text>
 					<Select
-						selected={values.fontFamily}
+						selected={formValues.fontFamilyOption}
 						options={fontFamilyOptions}
-						onChange={(opt) => handleChange('fontFamily', opt)}
+						onChange={onChange('fontFamilyOption')}
 						title='Шрифт'
 					/>
 					<RadioGroup
 						name='fontSize'
 						options={fontSizeOptions}
-						selected={values.fontSize}
-						onChange={(opt) => handleChange('fontSize', opt)}
+						selected={formValues.fontSizeOption}
+						onChange={onChange('fontSizeOption')}
 						title='Размер шрифта'
 					/>
 					<Select
-						selected={values.fontColors}
+						selected={formValues.fontColor}
 						options={fontColors}
-						onChange={(opt) => handleChange('fontColors', opt)}
+						onChange={onChange('fontColor')}
 						title='Цвет шрифта'
 					/>
 					<Separator />
 					<Select
-						selected={values.backgroundColors}
+						selected={formValues.backgroundColor}
 						options={backgroundColors}
-						onChange={(opt) => handleChange('backgroundColors', opt)}
+						onChange={onChange('backgroundColor')}
 						title='Цвет фона'
 					/>
 					<Select
-						selected={values.contentWidth}
+						selected={formValues.contentWidth}
 						options={contentWidthArr}
-						onChange={(opt) => handleChange('contentWidth', opt)}
+						onChange={onChange('contentWidth')}
 						title='Ширина контента'
 					/>
 					<div className={styles.bottomContainer}>
@@ -129,7 +131,6 @@ export const ArticleParamsForm = () => {
 					</div>
 				</form>
 			</aside>
-			{/* </div> */}
-		</>
+		</div>
 	);
 };
