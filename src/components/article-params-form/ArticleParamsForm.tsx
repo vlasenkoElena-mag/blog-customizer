@@ -32,6 +32,11 @@ export const ArticleParamsForm = ({
 
 	useEffect(() => {
 		if (!isFormOpen) return;
+		const handleEscClick = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				setIsFormOpen(false);
+			}
+		};
 
 		const handleClickOutside = (e: MouseEvent) => {
 			if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
@@ -39,23 +44,11 @@ export const ArticleParamsForm = ({
 			}
 		};
 
+		document.addEventListener('keydown', handleEscClick);
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
-	}, [isFormOpen]);
-
-	useEffect(() => {
-		if (!isFormOpen) return;
-		const handleEscClick = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') {
-				setIsFormOpen(false);
-			}
-		};
-
-		document.addEventListener('keydown', handleEscClick);
-		return () => {
 			document.removeEventListener('keydown', handleEscClick);
+			document.removeEventListener('mousedown', handleClickOutside);
 		};
 	}, [isFormOpen]);
 
